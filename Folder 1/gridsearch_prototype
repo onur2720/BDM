@@ -1,0 +1,66 @@
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import GridSearchCV
+from sklearn.ensemble import RandomForestRegressor
+import matplotlib.pyplot as plt
+
+# Generate random data with a subset of the columns
+n_samples = 100
+data = {
+    'Id': np.arange(1, n_samples + 1),
+    'Monthly rent payment': np.random.randint(500, 5000, n_samples),
+    'number of all rooms in the house': np.random.randint(2, 8, n_samples),
+    '=1 Overcrowding by rooms': np.random.choice([0, 1], n_samples),
+    '=1 has toilet in the household': np.random.choice([0, 1], n_samples),
+    '=1 if the household has a refrigerator': np.random.choice([0, 1], n_samples),
+    'Total males in the household': np.random.randint(0, 5, n_samples),
+    'Total persons in the household': np.random.randint(1, 8, n_samples),
+    'size of the household': np.random.randint(2, 9, n_samples),
+    'years of schooling': np.random.randint(0, 15, n_samples),
+    'Target': np.random.randint(1, 5, n_samples),
+}
+
+df = pd.DataFrame(data)
+
+# Split the data into features and the target variable
+X = df.drop(['Id', 'Target'], axis=1)
+y = df['Target']
+
+# Create a Random Forest Regressor model
+model = RandomForestRegressor()
+
+# Define a dictionary of hyperparameters
+param_grid = {
+    'n_estimators': [10, 50, 100],
+    'max_depth': [None, 10, 20],
+}
+
+# Create a GridSearchCV object
+grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5, scoring='neg_mean_squared_error')
+
+# Fit the grid search object to the data
+grid_search.fit(X, y)
+
+# Get the best hyperparameters
+best_params = grid_search.best_params_
+
+# Print the best hyperparameters
+print("Best Hyperparameters:")
+print(best_params)
+
+# Visualize the grid search results
+results = grid_search.cv_results_
+max_depth_values = [None, 10, 20]
+n_estimators_values = [10, 50, 100]
+
+scores = np.array(results['mean_test_score']).reshape(len(max_depth_values), len(n_estimators_values))
+
+plt.figure(figsize=(10, 6))
+plt.imshow(scores, interpolation='nearest', cmap='viridis')
+plt.xlabel('Number of Estimators')
+plt.ylabel('Max Depth')
+plt.colorbar()
+plt.xticks(np.arange(len(n_estimators_values)), n_estimators_values)
+plt.yticks(np.arange(len(max_depth_values)), max_depth_values)
+plt.title('Grid Search Mean Test Scores (Negative Mean Squared Error)')
+plt.show()
