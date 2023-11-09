@@ -1,0 +1,90 @@
+import numpy as np
+import pandas as pd 
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+#load train file
+url = "updated_train.xlsx"
+    
+df = pd.read_excel(url)
+
+df1= df[['Monthly rent payment', ' number of all rooms in the house', '=1 Overcrowding by rooms', '=1 has toilet in the household',
+ '=1 if the household has refrigerator','Total males in the household','Total persons in the household','years of schooling', '=1 if predominant material on the outside wall is waste material',
+ '=1 if no floor at the household']]
+         
+df2 = df[['=1 if the house has ceiling','=1 if no water provision','=1 no electricity in the dwelling',
+ '=1 no main source of energy used for cooking (no kitchen)','=1 if disable person','=1 if male']]
+
+df1.head()
+
+list(df)
+
+
+#Create a correlation matrix
+corr = df.corr(numeric_only = True).round(3)
+corr.style.background_gradient(cmap='coolwarm')
+
+
+  thresh = 0.7
+
+#mask = corr.abs().lt(thresh)
+mask = corr > thresh
+
+df1 = corr.where(mask).stack()
+
+df1.tail(20)
+
+
+
+  thresh = 0.5
+
+#mask = corr.abs().lt(thresh)
+mask = corr >= thresh
+
+df2 = corr.where(mask).stack()
+
+df2.head(30)
+
+
+
+  thresh = 0.4
+
+#mask = corr.abs().lt(thresh)
+mask = corr >= thresh
+
+df2 = corr.where(mask).stack()
+
+df2.head(25)
+
+
+
+  # "Critical correlations" 
+
+**Above 0.7**
+
+
+| Variable 1 | Variable 2  | Correlation|
+| --- | --- | --- |
+| Total persons in the household | Total males in the household  | 0.735|
+| Total persons in the household | Number of children 0 to 19 in household |   0.751|
+
+
+**Above 0.5**
+
+| Variable 1 | Variable 2  | Correlation|
+| --- | --- | --- |
+| #persons per room   | =1 Overcrowding by rooms       |            0.530|
+| ---|   Total persons in the household         |    0.583|
+| --- | Number of children 0 to 19 in household  |  0.596|
+                                         
+                                         
+**Above 0.4**
+
+| Variable 1 | Variable 2  | Correlation|
+| --- | --- | --- |
+|#persons per room  |                    Total males in the household|             0.406|
+| Number of children 0 to 19 in household |Total males in the household   |          0.467|
+|Monthly rent payment              |     number of all rooms in the house  |        0.443|
+| 1 if predominant material on the outside wall is waste material   |=1 if no floor at the household   |        0.434|
+  
