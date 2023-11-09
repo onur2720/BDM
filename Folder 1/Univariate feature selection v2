@@ -1,0 +1,125 @@
+Why this one?
+
+Based on properties of our dataset, the description on scikit and this article: https://towardsdatascience.com/5-feature-selection-method-from-scikit-learn-you-should-know-ed4d116e4172, we assumed that the Univariate Feature Selection is the best.
+
+As number of features, we selected 20.
+
+
+
+import pandas as pd
+import numpy as np
+from sklearn.feature_selection import SelectKBest, mutual_info_regression, f_classif, f_regression, mutual_info_classif
+
+pd.set_option('display.max_columns', None)
+
+
+
+
+url = "train_new_names.csv"
+
+
+df = pd.read_csv(url)
+df.head()
+
+
+X = df.drop('Target', axis = 1)
+
+#cannot use identifier for estimation purposes
+X = X.drop("Id", axis = 1)
+
+#cannot use household level identifier for target estimations
+X = X.drop("Household level identifier", axis = 1)
+
+#Included yes, no and years: excluded
+X = X.drop("Dependency rate", axis = 1)
+
+X = X.replace(np.nan, 0)
+
+X = X.replace("no", 0)
+
+X = X.replace("yes", 1)
+
+y = df[["Target"]]
+
+X.head(20)
+
+# Overview of models: 
+f_classif
+
+    ANOVA F-value between label/feature for classification tasks.
+mutual_info_classif
+
+    Mutual information for a discrete target.
+    
+    
+ f_regression
+
+    F-value between label/feature for regression tasks.
+mutual_info_regression
+
+    Mutual information for a continuous target.
+SelectPercentile
+
+    Select features based on percentile of the highest scores.
+SelectKBest
+
+    Select features based on the k highest scores.
+
+
+Source: https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.GenericUnivariateSelect.html
+
+My suggestion: 
+- SelectKBest
+- mutual_info_classif
+- f_regression
+
+=> how any attributes?
+
+
+#Select top 2 features based on mutual info classifier
+#version from source
+selector = SelectKBest(mutual_info_classif, k = 20)
+selector.fit(X, y)
+
+
+output1 = X.columns[selector.get_support()]
+
+
+#Select top 20 features based on f_regression
+#version from https://scikit-learn.org/stable/auto_examples/feature_selection/plot_feature_selection.html
+#F-test for feature scoring (further specifcy: )
+selector = SelectKBest(f_regression, k= 20)
+selector.fit(X, y)
+
+
+output2 = X.columns[selector.get_support()]
+
+
+print(output1)
+
+print(output2)
+
+
+Identical in both: 
+- 'owns a tablet'
+- 'persons younger than 12 years of age'
+- 'years of schooling'
+- '=1 if predominant material on the outside wall is block or brick'
+- '=1 if the house has ceiling'
+- '=1 if floor are good'
+- Number of children 0 to 19 in household'
+- 'years of education of male head of household',
+- 'average years of education for adults (18+)'
+- '# persons per room'
+- 'escolari squared'
+- 'edjefe squared'
+- hogar_nin squared'
+- 'overcrowding squared'
+- 'meaned squared'
+
+
+If we choose mutual info regression & f_classifier, we get similar resutls: 
+![grafik.png](attachment:grafik.png)
+
+
+
