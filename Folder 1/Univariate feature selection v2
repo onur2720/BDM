@@ -18,12 +18,12 @@ X = X.replace("yes", 1)
 y = df['Target']  # Ensure 'y' is a 1D array for SelectKBest
 
 # Initialize and fit SelectKBest with mutual_info_classif
-selector1 = SelectKBest(mutual_info_classif, k=20)
+selector1 = SelectKBest(mutual_info_classif, k='all')
 selector1.fit(X, y)
 output1 = X.columns[selector1.get_support()]
 
 # Initialize and fit SelectKBest with f_regression
-selector2 = SelectKBest(f_regression, k=20)
+selector2 = SelectKBest(f_regression, k='all')
 selector2.fit(X, y)
 output2 = X.columns[selector2.get_support()]
 
