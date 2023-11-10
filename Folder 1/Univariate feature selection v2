@@ -1,40 +1,50 @@
 import pandas as pd
-import numpy as np
-from sklearn.feature_selection import SelectKBest, mutual_info_classif, f_regression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import KFold, cross_val_score
+from sklearn.preprocessing import LabelEncoder
 
-# Set the maximum number of columns to display
-pd.set_option('display.max_columns', None)
-
-# Load the dataset
+# Load your dataset
 url = "train.csv"
-df = pd.read_csv(url)
-df.head()
 
-# Prepare the features matrix `X` and target vector `y`
-X = df.drop(['Target', 'Id', 'Household level identifier', 'Dependency rate'], axis=1)
-X = X.replace(np.nan, 0)
-X = X.replace("no", 0)
-X = X.replace("yes", 1)
-y = df['Target']  # Ensure 'y' is a 1D array for SelectKBest
+# Try reading the CSV with different delimiters
+try:
+    df = pd.read_csv(url)
+except pd.errors.ParserError:
+    try:
+        df = pd.read_csv(url, sep=';')  # Handling semicolon-delimited files
+    except pd.errors.ParserError:
+        df = pd.read_csv(url, delimiter='\t')  # Handling tab-delimited files
 
-# Initialize and fit SelectKBest with mutual_info_classif
-selector1 = SelectKBest(mutual_info_classif, k='all')
-selector1.fit(X, y)
-output1 = X.columns[selector1.get_support()]
+# Print column names to verify 'Target' exists
+print("Column names in DataFrame:", df.columns)
 
-# Initialize and fit SelectKBest with f_regression
-selector2 = SelectKBest(f_regression, k='all')
-selector2.fit(X, y)
-output2 = X.columns[selector2.get_support()]
+# Handle categorical variables with Label Encoding
+label_encoders = {}
+for column in df.select_dtypes(include=['object']).columns:
+    label_encoders[column] = LabelEncoder()
+    df[column] = label_encoders[column].fit_transform(df[column])
 
-# Print out the selected features from both methods
-print("Features selected by mutual_info_classif:")
-print(output1)
+# Replace NaN values with a placeholder or an appropriate value
+df.fillna(0, inplace=True)
 
-print("\nFeatures selected by f_regression:")
-print(output2)
+# Replace 'Target' with your actual target column name
+target_column_name = 'Target'  # Modify this if necessary
+if target_column_name in df.columns:
+    # Prepare your data
+    X = df.drop(target_column_name, axis=1)
+    y = df[target_column_name]
 
-# Find and print the intersection of both feature lists
-common_features = set(output1).intersection(output2)
-print("\nCommon features selected by both methods:")
-print(common_features)
+    # Initialize the model
+    model = RandomForestClassifier()
+
+    # Set up K-Fold cross-validation
+    kf = KFold(n_splits=5, shuffle=True, random_state=42)
+
+    # Perform cross-validation
+    cv_scores = cross_val_score(model, X, y, cv=kf)
+
+    # Output the results
+    print("Cross-validation scores:", cv_scores)
+    print("Mean CV Score:", cv_scores.mean())
+else:
+    print(f"Column '{target_column_name}' not found in DataFrame.")
