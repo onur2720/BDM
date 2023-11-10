@@ -1,0 +1,34 @@
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import KFold, cross_val_score
+from sklearn.preprocessing import LabelEncoder
+
+# Load your dataset
+url = "train.csv"
+df = pd.read_csv(url)
+
+# Handle categorical variables with Label Encoding
+label_encoders = {}
+for column in df.select_dtypes(include=['object']).columns:
+    label_encoders[column] = LabelEncoder()
+    df[column] = label_encoders[column].fit_transform(df[column])
+
+# Replace NaN values with a placeholder or an appropriate value
+df.fillna(0, inplace=True)
+
+# Prepare your data
+X = df.drop('Target', axis=1)  # Replace 'target_column' with your target column name
+y = df['Target']  # Replace 'target_column' with your target column name
+
+# Initialize the model
+model = RandomForestClassifier()
+
+# Set up K-Fold cross-validation
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
+
+# Perform cross-validation
+cv_scores = cross_val_score(model, X, y, cv=kf)
+
+# Output the results
+print("Cross-validation scores:", cv_scores)
+print("Mean CV Score:", cv_scores.mean())
