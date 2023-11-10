@@ -5,7 +5,18 @@ from sklearn.preprocessing import LabelEncoder
 
 # Load your dataset
 url = "train.csv"
-df = pd.read_csv(url)
+
+# Try reading the CSV with different delimiters
+try:
+    df = pd.read_csv(url)
+except pd.errors.ParserError:
+    try:
+        df = pd.read_csv(url, sep=';')  # Handling semicolon-delimited files
+    except pd.errors.ParserError:
+        df = pd.read_csv(url, delimiter='\t')  # Handling tab-delimited files
+
+# Print column names to verify 'Target' exists
+print("Column names in DataFrame:", df.columns)
 
 # Handle categorical variables with Label Encoding
 label_encoders = {}
@@ -16,19 +27,36 @@ for column in df.select_dtypes(include=['object']).columns:
 # Replace NaN values with a placeholder or an appropriate value
 df.fillna(0, inplace=True)
 
-# Prepare your data
-X = df.drop('Target', axis=1)  # Replace 'target_column' with your target column name
-y = df['Target']  # Replace 'target_column' with your target column name
+# Replace 'Target' with your actual target column name
+target_column_name = 'Target'  # Modify this if necessary
+if target_column_name in df.columns:
+    # Prepare your data
+    X = df.drop(target_column_name, axis=1)
+    y = df[target_column_name]
 
-# Initialize the model
-model = RandomForestClassifier()
+    # Initialize and train the model
+    model = RandomForestClassifier()
+    model.fit(X, y)
 
-# Set up K-Fold cross-validation
-kf = KFold(n_splits=5, shuffle=True, random_state=42)
+    # Set up K-Fold cross-validation
+    kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
-# Perform cross-validation
-cv_scores = cross_val_score(model, X, y, cv=kf)
+    # Perform cross-validation
+    cv_scores = cross_val_score(model, X, y, cv=kf)
 
-# Output the results
-print("Cross-validation scores:", cv_scores)
-print("Mean CV Score:", cv_scores.mean())
+    # Output the results
+    print("Cross-validation scores:", cv_scores)
+    print("Mean CV Score:", cv_scores.mean())
+
+    # Get feature importances
+    importances = model.feature_importances_
+
+    # Sort the feature importances in descending order and get the top 20
+    indices = importances.argsort()[::-1][:20]
+
+    # Print the top 20 features
+    print("Top 20 features:")
+    for i in indices:
+        print(f"{X.columns[i]}: {importances[i]}")
+else:
+    print(f"Column '{target_column_name}' not found in DataFrame.")
