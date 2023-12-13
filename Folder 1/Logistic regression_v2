@@ -1,0 +1,78 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split, RandomizedSearchCV, StratifiedKFold
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.compose import ColumnTransformer
+from sklearn.linear_model import LogisticRegression
+from scipy.stats import uniform
+
+# read in dataset
+df = pd.read_csv('train.csv')
+
+# Sampling a smaller subset of the dataset
+df_sampled = df.sample(frac=1, random_state=42)
+
+# Separate the features and the target
+X = df_sampled.drop('Target', axis=1)
+y = df_sampled['Target']
+
+# Identify categorical and numeric columns
+categorical_cols = X.select_dtypes(include=['object', 'category']).columns
+numeric_cols = X.select_dtypes(include=['number']).columns
+
+# Create transformers for numeric and categorical features
+numeric_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='mean')),
+    ('scaler', StandardScaler())
+])
+categorical_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='most_frequent')),
+    ('onehot', OneHotEncoder(handle_unknown='ignore'))
+])
+
+# Create a preprocessor
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', numeric_transformer, numeric_cols),
+        ('cat', categorical_transformer, categorical_cols)
+    ])
+
+# Create a pipeline with preprocessor and logistic regression
+model = Pipeline(steps=[
+    ('preprocessor', preprocessor),
+    ('classifier', LogisticRegression(max_iter=2000))  # Increased max_iter
+])
+
+# Split the data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Define a parameter distribution for RandomizedSearchCV
+param_distributions = {
+    'classifier__C': uniform(loc=0, scale=4),  # Regularization parameter
+    'classifier__solver': ['lbfgs', 'liblinear']  # Solvers
+}
+
+# Set up StratifiedKFold for cross-validation
+stratified_kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+# Set up RandomizedSearchCV
+random_search = RandomizedSearchCV(
+    model, 
+    param_distributions, 
+    n_iter=10, 
+    cv=stratified_kfold, 
+    random_state=42, 
+    n_jobs=-1
+)
+
+# Fit the random search to the training data
+random_search.fit(X_train, y_train)
+
+# Print the best parameters and best score
+print("Best parameters:", random_search.best_params_)
+print("Best score:", random_search.best_score_)
+
+# Evaluate the best model on the test data
+test_score = random_search.score(X_test, y_test)
+print("Test score: {:.3f}".format(test_score))
