@@ -7,6 +7,32 @@ from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import LogisticRegression
 from scipy.stats import uniform
 
+# loss functions for today
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
+
+# stuff for evaluating classifiers
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt # for displaying a pretty confusion matrix
+
+# dummy models for comparison
+from sklearn.dummy import DummyRegressor
+from sklearn.dummy import DummyClassifier
+
+# regression models
+from sklearn.linear_model import LinearRegression
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.ensemble import RandomForestRegressor
+
+# classification models
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
+
+# SMOTE function for balancing datasets
+from imblearn.over_sampling import SMOTE 
+
 # read in dataset
 df = pd.read_csv('train.csv')
 
@@ -69,6 +95,8 @@ random_search = RandomizedSearchCV(
 # Fit the random search to the training data
 random_search.fit(X_train, y_train)
 
+y_predict = random_search.predict(X_test)
+
 # Print the best parameters and best score
 print("Best parameters:", random_search.best_params_)
 print("Best score:", random_search.best_score_)
@@ -76,3 +104,70 @@ print("Best score:", random_search.best_score_)
 # Evaluate the best model on the test data
 test_score = random_search.score(X_test, y_test)
 print("Test score: {:.3f}".format(test_score))
+
+# Evaluate the model
+accuracy = accuracy_score(y_test, predictions)
+conf_matrix = confusion_matrix(y_test, predictions)
+classification_rep = classification_report(y_test, predictions)
+
+# Print the results
+print(f'Accuracy: {accuracy}')
+print(f'Confusion Matrix:\n{conf_matrix}')
+print(f'Classification Report:\n{classification_rep}')
+
+# Evaluating the regressor thanks to loss functions
+
+def get_metrics(y_true, y_pred):
+    # MAE: the average of the absolute differences between the actual values and the predicted values
+    mae = mean_absolute_error(y_true, y_pred)
+    
+    # MSE: the average of the squared differences between the actual values and the predicted values
+    mse = mean_squared_error(y_true, y_pred)
+    
+    # RMSE: the square root of MSE
+    rmse = mean_squared_error(y_true, y_pred, squared=False)
+    
+    # return all three metrics
+    return mae, mse, rmse
+
+logr_metrics = get_metrics(y_test, y_predict)
+print(metrics)
+
+# print the logistic regression classification report here
+print(classification_report(y_test, y_predict))
+
+# Building a baseline classifier - dummy classifier 
+
+dm = DummyClassifier()
+dm.fit(X_train, y_train)
+dm_y_pred = dm.predict(X_test)
+
+dm_metrics = get_metrics(y_test, dm_y_pred)  # metrics for dummy regressor
+print(dm_metrics)
+
+# Printing the accuracy of the classifier on the training and test data
+print("Accuracy on training set: {:.3f}".format(dm.score(X_train, y_train)))
+print("Accuracy on test set: {:.3f}".format(dm.score(X_test, y_test)))
+
+print(sum(y)/len(y))
+
+# this function computes the difference between the baseline and candidate to get the actual improvement in performance delivers by the candidate model
+def get_improvement(baseline, candidate):
+    return baseline - candidate
+
+# compute the improvements of the linear regression model over the dummy for each of the three metrics (MAE, MSE, RMSE).
+logr_improvements = (
+    get_improvement(dm_metrics[0], logr_metrics[0]), # MAE improvement
+    get_improvement(dm_metrics[1], logr_metrics[1]), # MSE improvement
+    get_improvement(dm_metrics[2], logr_metrics[2])  # RMSE improvement
+)
+
+print(logr_improvements)
+
+cm = confusion_matrix(y_test, dm_y_pred)
+print(cm)
+
+disp = ConfusionMatrixDisplay(confusion_matrix=cm,
+                               display_labels=dm.classes_)
+disp.plot()
+plt.show()
